@@ -2,7 +2,7 @@ defmodule Hlc.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :hlc,
+    [app: :hlclock,
      version: "0.1.0",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
@@ -28,6 +28,6 @@ defmodule Hlc.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:stream_data, "~> 0.1.1"}]
+    [{:stream_data, "~> 0.1.1", only: [:test, :dev]}]
   end
 end
