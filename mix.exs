@@ -1,13 +1,20 @@
 defmodule Hlc.Mixfile do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [app: :hlclock,
-     version: "0.1.0",
+     version: @version,
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps()]
+     description: description(),
+     package: package(),
+     deps: deps(),
+     name: "HLClock",
+     source_url: "https://github.com/keathley/hlclock",
+   ]
   end
 
   # Configuration for the OTP application
@@ -28,6 +35,25 @@ defmodule Hlc.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:stream_data, "~> 0.1.1", only: [:test, :dev]}]
+    [
+      {:stream_data, "~> 0.1.1", only: [:test, :dev]},
+      {:ex_doc, "~> 0.16", only: :dev},
+    ]
+  end
+
+  defp description do
+    """
+    Hybrid Logical Clocks.
+    """
+  end
+
+  defp package do
+    [
+      name: :hlclock,
+      files: ["lib", "mix.exs", "README.md", "LICENSE"],
+      maintainers: ["Chris Keathley", "Neil Menne"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/keathley/hlclock"},
+    ]
   end
 end
