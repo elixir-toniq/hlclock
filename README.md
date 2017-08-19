@@ -9,7 +9,7 @@ by adding `hlc` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:hlc, "~> 0.1.0"}]
+  [{:hlclock, "~> 0.1.0"}]
 end
 ```
 
