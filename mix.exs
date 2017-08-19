@@ -50,7 +50,7 @@ defmodule Hlc.Mixfile do
   defp package do
     [
       name: :hlclock,
-      files: ["lib", "mix.exs", "README.md", "LICENSE"],
+      files: ["lib", "mix.exs", "README.md"],
       maintainers: ["Chris Keathley", "Neil Menne"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/keathley/hlclock"},
