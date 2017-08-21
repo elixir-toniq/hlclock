@@ -31,6 +31,10 @@ defmodule HLClock.Timestamp do
   def compare(%{node_id: n1}, %{node_id: n2}) when n1 < n2, do: :lt
   def compare(_ = %{}, _ = %{}), do: :eq
 
+  def less?(t1, t2) do
+    compare(t1, t2) == :lt
+  end
+
   @doc "to binary representation"
   def encode(%{time: t, counter: c, node_id: n}) do
     << t :: size(48) >> <> << c :: size(16) >> <> << n :: size(64) >>

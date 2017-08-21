@@ -18,38 +18,40 @@ defmodule HLClock do
   Inspired by https://www.cse.buffalo.edu/tech-reports/2014-04.pdf
   """
 
-  alias __MODULE__, as: Clock
   alias HLClock.Timestamp
-
-  defstruct [:clock_fn, :curr_ts]
 
   @doc """
   clock constructor requires the node_id, a millisecond clock fn and a
   maximum drift parameter in milliseconds
   """
-  def new(node_id \\ 0,
-    clock_fn \\ &Clock.default_time/0) do
-    with {:ok, t0} <- Timestamp.new(clock_fn.(), 0, node_id) do
-      %Clock{clock_fn: clock_fn,
-             curr_ts: t0}
-    end
+  def new(pt0 \\ default_time(), node_id \\ 0) do
+    Timestamp.new(pt0, 0, node_id)
   end
 
-  @doc "generate a new timestamp"
-  def send_timestamp(%Clock{curr_ts: old, clock_fn: cfn} = clock) do
-    pt = cfn.()
+  @doc """
+  Generate a single HLC Timestamp for sending to other nodes or
+  local causality tracking
+  """
+  def send_timestamp(old, pt \\ default_time()) do
     nt = max(old.time, pt)
     nc = advance(old, nt)
 
-    cond do
-      drift?(clock, nt, pt) ->
-        {:error, :clock_drift_violation}
-      true ->
-        # counter overflow is handled by Timestamp.new
-        with {:ok, new_ts} <- Timestamp.new(nt, nc, old.node_id) do
-          {:ok, %Clock{clock | curr_ts: new_ts}}
-        end
+    with {:ok} <- handle_drift(nt, pt) do
+      Timestamp.new(nt, nc, old.node_id)
     end
+  end
+
+  defp handle_drift(l, pt, err \\ :clock_drift_violation) do
+    cond do
+      drift?(l, pt) ->
+        {:error, err}
+      true ->
+        {:ok}
+    end
+  end
+
+  defp drift?(l, pt) do
+    abs(l - pt) > max_drift()
   end
 
   defp advance(old, new_time) do
@@ -61,43 +63,42 @@ defmodule HLClock do
     end
   end
 
-  @doc "receive a remote timestamp and merge with local"
-  def recv_timestamp(%Clock{clock_fn: cfn, curr_ts: local} = clock, msg) do
-    pt = cfn.()
-    max_pt = max(pt, max(msg.time, local.time))
-    cond do
-      local.node_id == msg.node_id ->
-        {:error, :duplicate_node_id}
-      drift?(msg.time, pt) ->
-        {:error, :remote_drift_violation}
-      drift?(max_pt, pt) ->
-        {:error, :clock_drift_violation}
-      true ->
-        new_log = merge_logical(max_pt, local, msg)
-        with {:ok, t} <- Timestamp.new(max_pt, new_log, local.node_id) do
-          {:ok, %Clock{clock | curr_ts: t}}
-        end
+  @doc """
+  Given the current timestamp for this node and a provided remote timestamp,
+  perform the merge of both logical time and logical counters. Returns the new
+  current timestamp for the local node
+  """
+  def recv_timestamp(local, remote, pt \\ default_time()) do
+    max_pt = max(pt, max(remote.time, local.time))
+
+    with {:ok, node_id} <- compare_node_ids(local.node_id, remote.node_id),
+         {:ok} <- handle_drift(remote.time, pt, :remote_drift_violation),
+         {:ok} <- handle_drift(max_pt, pt),
+         {:ok, log} <- merge_logical(max_pt, local, remote) do
+      Timestamp.new(max_pt, log, node_id)
     end
   end
 
-  defp drift?(l, pt) do
-    abs(l - pt) > max_drift()
-  end
+  defp compare_node_ids(local_id, remote_id) when local_id == remote_id, do:
+    {:error, :duplicate_node_id}
+  defp compare_node_ids(local_id, _), do: {:ok, local_id}
 
-  defp merge_logical(max_pt, local, msg) do
+  defp merge_logical(max_pt, local, remote) do
     cond do
-      max_pt == local.time && max_pt == msg.time ->
-        max(local.counter, msg.counter) + 1
+      max_pt == local.time && max_pt == remote.time ->
+        max(local.counter, remote.counter) + 1
       max_pt == local.time ->
         local.counter + 1
-      max_pt == msg.time ->
-        msg.counter + 1
+      max_pt == remote.time ->
+        remote.counter + 1
       true ->
         0
     end
   end
 
-  @doc "os_time in milliseconds"
+  @doc """
+  ensure that System.os_time is returning in milliseconds
+  """
   def default_time(), do: System.os_time(:milliseconds)
 
   defp max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
