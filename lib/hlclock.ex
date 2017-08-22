@@ -101,5 +101,8 @@ defmodule HLClock do
   """
   def default_time(), do: System.os_time(:milliseconds)
 
-  defp max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
+  @doc """
+  Configurable clock synchronization parameter, ε.
+  """
+  def max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
 end
