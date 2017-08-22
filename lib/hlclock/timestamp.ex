@@ -1,6 +1,10 @@
 defmodule HLClock.Timestamp do
   @moduledoc """
-  HULC == Hybrid Unique Logical Clock
+  HLC Timestamp
+
+  Implements the necessary components of the HLC tuple (i.e. logical time and
+  logical counter) with extension to support node ids to provide unique
+  timestamps even in cases where time and counter are the same
 
   Binary representations assume big endianness for interop simplicity with other
   languages/representations.
@@ -11,6 +15,10 @@ defmodule HLClock.Timestamp do
 
   alias __MODULE__, as: T
 
+  @doc """
+  Construct a timestamp from its principal components: logical time (initially
+  node's physical time), logical counter (initally zero), and the node id
+  """
   def new(time, counter, node_id \\ 0) do
     cond do
       byte_size(:binary.encode_unsigned(counter)) > 2 ->
@@ -22,7 +30,10 @@ defmodule HLClock.Timestamp do
     end
   end
 
-  @doc "timestamp comparison"
+  @doc """
+  Exhaustive comparison of two timestamps: precedence is in order of time
+  component, logical counter, and finally node identifier
+  """
   def compare(%{time: t1}, %{time: t2}) when t1 > t2, do: :gt
   def compare(%{time: t1}, %{time: t2}) when t1 < t2, do: :lt
   def compare(%{counter: c1}, %{counter: c2}) when c1 > c2, do: :gt
@@ -35,12 +46,16 @@ defmodule HLClock.Timestamp do
     compare(t1, t2) == :lt
   end
 
-  @doc "to binary representation"
+  @doc """
+  pack the rich Timestamp struct as a 128 bit byte array
+  """
   def encode(%{time: t, counter: c, node_id: n}) do
     << t :: size(48) >> <> << c :: size(16) >> <> << n :: size(64) >>
   end
 
-  @doc "construct a Timestamp from the binary representation"
+  @doc """
+  construct a Timestamp from the binary representation
+  """
   def decode(<<t :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
     %T{time: t, counter: c, node_id: n}
   end
