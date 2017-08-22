@@ -1,6 +1,6 @@
 # HLClock
 
-**TODO: Add description**
+[![Build Status](https://travis-ci.org/keathley/hlclock.svg?branch=master)](https://travis-ci.org/keathley/hlclock)
 
 ## Installation
 
