@@ -1,54 +1,68 @@
 defmodule HLClock.Timestamp do
-  defstruct [:time, :logical, node_id: ""]
+  @moduledoc """
+  HLC Timestamp
+
+  Implements the necessary components of the HLC tuple (i.e. logical time and
+  logical counter) with extension to support node ids to provide unique
+  timestamps even in cases where time and counter are the same
+
+  Binary representations assume big endianness for interop simplicity with other
+  languages/representations.
+
+  """
+
+  defstruct [:time, :counter, :node_id]
 
   alias __MODULE__, as: T
 
-  def new(time, logical), do: %T{time: time, logical: logical}
-
-  def new(time, logical, node_id) do
-    with :ok <- validate(time, logical, node_id) do
-      %__MODULE__{time: time, logical: logical, node_id: node_id}
-    end
-  end
-
-  def validate(_, logical, _) do
+  @doc """
+  Construct a timestamp from its principal components: logical time (initially
+  node's physical time), logical counter (initally zero), and the node id
+  """
+  def new(time, counter, node_id \\ 0) do
     cond do
-      byte_size(:binary.encode_unsigned(logical)) > 2 ->
-        {:error, :logical_too_large}
+      byte_size(:binary.encode_unsigned(counter)) > 2 ->
+        {:error, :counter_too_large}
+      byte_size(:binary.encode_unsigned(node_id)) > 8 ->
+        {:error, :node_id_too_large}
       true ->
-        :ok
+        {:ok, %T{time: time, counter: counter, node_id: node_id}}
     end
   end
 
-  def increment(%T{logical: l, time: time}) do
-    %T{time: time, logical: l+1}
+  @doc """
+  Exhaustive comparison of two timestamps: precedence is in order of time
+  component, logical counter, and finally node identifier
+  """
+  def compare(%{time: t1}, %{time: t2}) when t1 > t2, do: :gt
+  def compare(%{time: t1}, %{time: t2}) when t1 < t2, do: :lt
+  def compare(%{counter: c1}, %{counter: c2}) when c1 > c2, do: :gt
+  def compare(%{counter: c1}, %{counter: c2}) when c1 < c2, do: :lt
+  def compare(%{node_id: n1}, %{node_id: n2}) when n1 > n2, do: :gt
+  def compare(%{node_id: n1}, %{node_id: n2}) when n1 < n2, do: :lt
+  def compare(_ = %{}, _ = %{}), do: :eq
+
+  def less?(t1, t2) do
+    compare(t1, t2) == :lt
   end
 
-  def ahead?(clock, physical_time) do
-    clock.time >= physical_time
+  @doc """
+  pack the rich Timestamp struct as a 128 bit byte array
+  """
+  def encode(%{time: t, counter: c, node_id: n}) do
+    << t :: size(48) >> <> << c :: size(16) >> <> << n :: size(64) >>
   end
 
-  def compare(%{time: m1}, %{time: m2}) when m1 > m2, do: :gt
-  def compare(%{time: m1}, %{time: m2}) when m1 < m2, do: :lt
-  def compare(clock1, clock2) do
-    cond do
-      clock1.logical > clock2.logical -> :gt
-      clock1.logical < clock2.logical -> :lt
-      true -> :eq
-    end
+  @doc """
+  construct a Timestamp from the binary representation
+  """
+  def decode(<<t :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
+    %T{time: t, counter: c, node_id: n}
   end
-
-  def encode(%{time: m, logical: c, node_id: n}), do:
-     << m :: size(48) >>
-  <> << c :: size(16) >>
-  <> << n :: size(64) >>
-
-  def decode(<<m :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>), do:
-    new(m, c, n)
 
   defimpl String.Chars do
-    def to_string(%{time: time, logical: logical, node_id: node_id}) do
-      "time: #{time}, logical: #{logical}, node_id: #{node_id}"
+    def to_string(%{time: time, counter: counter, node_id: node_id}) do
+      "time: #{time}, counter: #{counter}, node_id: #{node_id}"
     end
   end
 end
