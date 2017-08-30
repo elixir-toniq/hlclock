@@ -32,34 +32,12 @@ defmodule HLClock do
   Generate a single HLC Timestamp for sending to other nodes or
   local causality tracking
   """
-  def send_timestamp(old, pt \\ default_time()) do
+  def send_timestamp(%Timestamp{}=old, pt \\ default_time()) do
     nt = max(old.time, pt)
     nc = advance(old, nt)
 
-    with {:ok} <- handle_drift(nt, pt) do
+    with :ok <- handle_drift(old.time, nt) do
       Timestamp.new(nt, nc, old.node_id)
-    end
-  end
-
-  defp handle_drift(l, pt, err \\ :clock_drift_violation) do
-    cond do
-      drift?(l, pt) ->
-        {:error, err}
-      true ->
-        {:ok}
-    end
-  end
-
-  defp drift?(l, pt) do
-    abs(l - pt) > max_drift()
-  end
-
-  defp advance(old, new_time) do
-    cond do
-      old.time == new_time ->
-        old.counter + 1
-      true ->
-        0
     end
   end
 
@@ -72,12 +50,29 @@ defmodule HLClock do
     max_pt = max(pt, max(remote.time, local.time))
 
     with {:ok, node_id} <- compare_node_ids(local.node_id, remote.node_id),
-         {:ok} <- handle_drift(remote.time, pt, :remote_drift_violation),
-         {:ok} <- handle_drift(max_pt, pt),
-         {:ok, log} <- merge_logical(max_pt, local, remote) do
+         :ok <- handle_drift(remote.time, pt, :remote_drift_violation),
+         :ok <- handle_drift(max_pt, pt),
+         log <- merge_logical(max_pt, local, remote) do
       Timestamp.new(max_pt, log, node_id)
     end
   end
+
+  @doc """
+  Determines if the clock's timestamp "happened before" a different timestamp
+  """
+  def before?(c1, c2) do
+    Timestamp.less?(c1, c2)
+  end
+
+  @doc """
+  Ensure that System.os_time is returning in milliseconds
+  """
+  def default_time(), do: System.os_time(:milliseconds)
+
+  @doc """
+  Configurable clock synchronization parameter, ε.
+  """
+  def max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
 
   defp compare_node_ids(local_id, remote_id) when local_id == remote_id, do:
     {:error, :duplicate_node_id}
@@ -96,13 +91,25 @@ defmodule HLClock do
     end
   end
 
-  @doc """
-  ensure that System.os_time is returning in milliseconds
-  """
-  def default_time(), do: System.os_time(:milliseconds)
+  defp handle_drift(l, pt, err \\ :clock_drift_violation) do
+    cond do
+      drift?(l, pt) ->
+        {:error, err}
+      true ->
+        :ok
+    end
+  end
 
-  @doc """
-  Configurable clock synchronization parameter, ε.
-  """
-  def max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
+  defp drift?(l, pt) do
+    abs(l - pt) > max_drift()
+  end
+
+  defp advance(old, new_time) do
+    cond do
+      old.time == new_time ->
+        old.counter + 1
+      true ->
+        0
+    end
+  end
 end
