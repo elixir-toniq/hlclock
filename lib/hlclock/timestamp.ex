@@ -8,7 +8,6 @@ defmodule HLClock.Timestamp do
 
   Binary representations assume big endianness for interop simplicity with other
   languages/representations.
-
   """
 
   defstruct [:time, :counter, :node_id]
@@ -25,6 +24,8 @@ defmodule HLClock.Timestamp do
         {:error, :counter_too_large}
       byte_size(:binary.encode_unsigned(node_id)) > 8 ->
         {:error, :node_id_too_large}
+      byte_size(:binary.encode_unsigned(time)) > 6 ->
+        {:error, :time_too_large}
       true ->
         {:ok, %T{time: time, counter: counter, node_id: node_id}}
     end
@@ -47,14 +48,18 @@ defmodule HLClock.Timestamp do
   end
 
   @doc """
-  pack the rich Timestamp struct as a 128 bit byte array
+  Pack the rich Timestamp struct as a 128 bit byte array
+
+  48 bits - Physical time
+  16 bits - Logical time
+  64 bits - Node ID
   """
   def encode(%{time: t, counter: c, node_id: n}) do
     << t :: size(48) >> <> << c :: size(16) >> <> << n :: size(64) >>
   end
 
   @doc """
-  construct a Timestamp from the binary representation
+  Construct a Timestamp from the binary representation
   """
   def decode(<<t :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
     %T{time: t, counter: c, node_id: n}
