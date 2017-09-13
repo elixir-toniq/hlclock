@@ -6,7 +6,7 @@ defmodule Hlc.Mixfile do
   def project do
     [app: :hlclock,
      version: @version,
-     elixir: "~> 1.4",
+     elixir: "~> 1.5",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -19,7 +19,9 @@ defmodule Hlc.Mixfile do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    [
+      mod: {HLClock.Application, []},
+      extra_applications: [:logger]]
   end
 
   def elixirc_paths(:test), do: ["lib", "test/support"]
