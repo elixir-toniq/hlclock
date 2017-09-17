@@ -8,8 +8,6 @@ defmodule HLClock.Server do
   end
 
   def init(opts) do
-    opts = Keyword.merge(default_opts(), opts)
-
     Timestamp.new(physical_time(), default_counter(), opts[:node_id])
   end
 
@@ -34,8 +32,4 @@ defmodule HLClock.Server do
   defp physical_time, do: System.os_time(:milliseconds)
 
   defp default_counter, do: 0
-
-  defp default_opts, do: [
-    node_id: (:rand.uniform * 1_000) |> round,
-  ]
 end

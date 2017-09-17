@@ -18,7 +18,7 @@ defmodule HLClock.Timestamp do
   Construct a timestamp from its principal components: logical time (initially
   node's physical time), logical counter (initally zero), and the node id
   """
-  def new(time, counter, node_id\\0) do
+  def new(time, counter, node_id \\ 0) do
     cond do
       byte_size(:binary.encode_unsigned(counter)) > 2 ->
         {:error, :counter_too_large}
@@ -37,7 +37,7 @@ defmodule HLClock.Timestamp do
   """
   def send(%{time: old_time, counter: counter, node_id: node_id}, pt) do
     new_time    = max(old_time, pt)
-    new_counter = advance_counter(old_time, counter, pt)
+    new_counter = advance_counter(old_time, counter, new_time)
 
     with :ok <- handle_drift(old_time, new_time) do
       new(new_time, new_counter, node_id)
@@ -128,10 +128,11 @@ defmodule HLClock.Timestamp do
   end
 
   defp advance_counter(old_time, counter, new_time) do
-    if old_time == new_time do
-      counter + 1
-    else
-      0
+    cond do
+      old_time == new_time ->
+        counter + 1
+      true ->
+        0
     end
   end
 

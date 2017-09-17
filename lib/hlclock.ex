@@ -18,17 +18,14 @@ defmodule HLClock do
   Inspired by https://www.cse.buffalo.edu/tech-reports/2014-04.pdf
   """
 
-  alias HLClock.Timestamp
+  alias HLClock.{NodeId, Timestamp}
 
-  # @doc """
-  # clock constructor requires the node_id, a millisecond clock fn and a
-  # maximum drift parameter in milliseconds
-  # """
-  def new(pt \\ physical_time()) do
-    GenServer.call(HLClock.Server, :new)
-    # Timestamp.new(pt0, 0, node_id)
-    # GenServer.start_link(HLClock.Server, opts, [name: HLClock.Server])
+  def start_link(opts \\ []) do
+    opts
+    |> build_opts
+    |> HLClock.Supervisor.start_link
   end
+
 
   @doc """
   Generate a single HLC Timestamp for sending to other nodes or
@@ -53,11 +50,6 @@ defmodule HLClock do
   def max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
 
   @doc """
-  Current physical time.
-  """
-  def physical_time(), do: physical_time_fn().()
-
-  @doc """
   Determines if the clock's timestamp "happened before" a different timestamp
   """
   def before?(t1, t2) do
@@ -67,9 +59,12 @@ defmodule HLClock do
   @doc """
   Configurable physical time function. Defaults to System.os_time/1.
   """
-  def physical_time_fn() do
-    Application.get_env(:hlclock, :physical_time_fn, fn ->
-      System.os_time(:milliseconds)
-    end)
+  def physical_time() do
+    System.os_time(:milliseconds)
+  end
+
+  defp build_opts(opts) do
+    opts
+    |> Keyword.put_new(:node_id, NodeId.hash())
   end
 end

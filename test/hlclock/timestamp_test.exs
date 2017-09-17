@@ -31,7 +31,7 @@ defmodule HLClock.TimestampTest do
         assert timestamps
         |> Enum.map(&Timestamp.encode/1)
         |> Enum.sort()
-        |> Enum.map(&Timestamp.decode/1) == Enum.sort(timestamps, &Timestamp.less?/2)
+        |> Enum.map(&Timestamp.decode/1) == Enum.sort(timestamps, &Timestamp.before?/2)
       end
     end
 
@@ -59,12 +59,12 @@ defmodule HLClock.TimestampTest do
         {:ok, t1} = Timestamp.send(t0, 0)
         assert t0.counter == 0
         assert t1.counter == 1
-        refute Timestamp.less?(t1, t0)
+        refute Timestamp.before?(t1, t0)
       end
     end
 
     test "physical time can move backwards" do
-      {:ok, t0} = Timestamp.new(10, 0)
+      {:ok, t0} = Timestamp.new(10, 0, 0)
       {:ok, t1} = Timestamp.send(t0, 9)
       assert t0.time == t1.time
       assert t1.counter == 1
@@ -79,8 +79,8 @@ defmodule HLClock.TimestampTest do
 
   describe "recv_timestamp/2" do
     test "smoke test" do
-      {:ok, t0} = Timestamp.new(0, 0)
-      {:ok, t1} = Timestamp.new(0, 1)
+      {:ok, t0} = Timestamp.new(0, 0, 0)
+      {:ok, t1} = Timestamp.new(0, 0, 1)
       {:ok, t2} = Timestamp.recv(t0, t1, 0)
       assert t2.time == 0
       assert t2.counter == 1
