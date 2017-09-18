@@ -11,7 +11,8 @@ defmodule HLClockTest do
     test "if no node id is given then we use a hash of the node name" do
       {:ok, _hlc} = HLClock.start_link()
       {:ok, clock} = HLClock.send_timestamp()
-      assert %{node_id: _node_id} = clock
+      node_id = HLClock.NodeId.hash()
+      assert %{node_id: ^node_id} = clock
     end
   end
 
