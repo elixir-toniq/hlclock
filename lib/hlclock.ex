@@ -20,6 +20,9 @@ defmodule HLClock do
 
   alias HLClock.{NodeId, Timestamp}
 
+  @doc """
+  Starts and links the supervision tree.
+  """
   def start_link(opts \\ []) do
     opts
     |> build_opts
@@ -54,13 +57,6 @@ defmodule HLClock do
   """
   def before?(t1, t2) do
     Timestamp.before?(t1, t2)
-  end
-
-  @doc """
-  Configurable physical time function. Defaults to System.os_time/1.
-  """
-  def physical_time() do
-    System.os_time(:milliseconds)
   end
 
   defp build_opts(opts) do
