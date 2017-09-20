@@ -1,6 +1,5 @@
 defmodule HLClock do
   @moduledoc """
-
   Hybrid Logical Clock
 
   Provides globally-unique, monotonic timestamps. Timestamps are bounded by the
