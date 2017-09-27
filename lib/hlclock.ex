@@ -48,6 +48,46 @@ defmodule HLClock do
   end
 
   @doc """
+  Functionally equivalent to using send_timestamp. This generates a timestamp
+  for local causality tracking.
+  """
+  def now do
+    GenServer.call(HLClock.Server, :send_timestamp)
+  end
+
+  @doc """
+
+  Create a millisecond granularity DateTime struct representing the logical time
+  portion of the Timestamp.
+
+  Given that this representation loses the logical counter and node information,
+  it should be used as a reference only. Including the counter in the DateTime
+  struct would create absurd but still ordered timestamps.
+
+  ## Example
+
+      iex> {:ok, t0} = Timestamp.new(1410652800000, 0, 0)
+      {:ok, %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}}
+      iex> encoded = Timestamp.encode(t0)
+      <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
+      iex> << time_and_counter :: size(64), _ :: size(64) >> = encoded
+      iex> DateTime.from_unix(time_and_counter, :microsecond)
+      {:ok, #DateTime<4899-07-30 06:31:40.800000Z>}
+  """
+  def to_datetime(%Timestamp{time: t}) do
+    with {:ok, dt} <- DateTime.from_unix(t, :millisecond) do
+      dt
+    end
+  end
+
+  @doc """
+  Return the logical, monotonic time portion. Unlike `System.monotonic_time`, if
+  timestamps are regularly exchanged with other nodes and/or clients, this
+  monotonic timestamp will represent a cluster wide monotonic value.
+  """
+  def to_os_time(%Timestamp{time: t}), do: t
+
+  @doc """
   Configurable clock synchronization parameter, ε. Defaults to 300 seconds
   """
   def max_drift(), do: Application.get_env(:hlclock, :max_drift_millis, 300_000)
