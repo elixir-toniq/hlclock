@@ -8,7 +8,7 @@ defmodule HLClock.Server do
   end
 
   def init(opts) do
-    Timestamp.new(physical_time(), default_counter(), opts[:node_id])
+    Timestamp.new(physical_time(), default_counter(), node_id(opts))
   end
 
   def handle_call(:send_timestamp, _from, timestamp) do
@@ -32,4 +32,6 @@ defmodule HLClock.Server do
   defp physical_time, do: System.os_time(:milliseconds)
 
   defp default_counter, do: 0
+
+  defp node_id([{:node_id, fun} | _]) when is_function(fun), do: fun.()
 end

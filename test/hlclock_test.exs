@@ -1,11 +1,21 @@
 defmodule HLClockTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
+  doctest HLClock
 
   describe "node names" do
     test "HLClocks can be given a node id" do
-      {:ok, _hlc} = HLClock.start_link(node_id: 12345)
+      node_id = fn -> 12345 end
+      {:ok, _hlc} = HLClock.start_link(node_id: node_id)
       {:ok, clock} = HLClock.send_timestamp()
       assert %{node_id: 12345} = clock
+    end
+
+    test "can be added in a config" do
+      Application.put_env(:hlclock, :node_id, fn -> 1337 end)
+      {:ok, _hlc} = HLClock.start_link()
+      {:ok, clock} = HLClock.send_timestamp()
+      Application.delete_env(:hlclock, :node_id)
+      assert %{node_id: 1337} = clock
     end
 
     test "if no node id is given then we use a hash of the node name" do
