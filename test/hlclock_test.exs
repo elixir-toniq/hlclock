@@ -1,6 +1,5 @@
 defmodule HLClockTest do
   use ExUnit.Case, async: false
-  doctest HLClock
 
   describe "node names" do
     test "HLClocks can be given a node id" do

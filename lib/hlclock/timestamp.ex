@@ -80,6 +80,39 @@ defmodule HLClock.Timestamp do
   end
 
   @doc """
+  Create a millisecond granularity DateTime struct representing the logical time
+  portion of the Timestamp.
+
+  Given that this representation loses the logical counter and node information,
+  it should be used as a reference only. Including the counter in the DateTime
+  struct would create absurd but still ordered timestamps.
+
+  ## Example
+
+  iex> {:ok, _t0} = HLClock.Timestamp.new(1410652800000, 0, 0)
+  {:ok, %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}}
+
+  ...> encoded = HLClock.Timestamp.encode(t0)
+  <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
+  ...> << time_and_counter :: size(64), _ :: size(64) >> = encoded
+
+  ...> DateTime.from_unix(time_and_counter, :microsecond)
+  {:ok, #DateTime<4899-07-30 06:31:40.800000Z>}
+  """
+  def to_datetime(%T{time: t}) do
+    with {:ok, dt} <- DateTime.from_unix(t, :millisecond) do
+      dt
+    end
+  end
+
+  @doc """
+  Return the logical, monotonic time portion. Unlike `System.monotonic_time`, if
+  timestamps are regularly exchanged with other nodes and/or clients, this
+  monotonic timestamp will represent a cluster wide monotonic value.
+  """
+  def to_os_time(%T{time: t}), do: t
+
+  @doc """
   Pack the rich Timestamp struct as a 128 bit byte array
 
   48 bits - Physical time
@@ -95,6 +128,19 @@ defmodule HLClock.Timestamp do
   """
   def decode(<<t :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
     %T{time: t, counter: c, node_id: n}
+  end
+
+  @doc """
+  Recover a Timestamp from the string representation.
+  """
+  def from_string(tstr) do
+    with {:ok, dt, _} <- tstr |> String.slice(0, 24) |> DateTime.from_iso8601(),
+         time when is_integer(time) <- DateTime.to_unix(dt, :millisecond),
+         {counter, _} <- tstr |> String.slice(25, 4) |> Integer.parse(16),
+         {node, _} <- tstr |> String.slice(30, 16) |> Integer.parse(16),
+         {:ok, timestamp} <- new(time, counter, node) do
+      timestamp
+    end
   end
 
   defp compare_node_ids(local_id, remote_id) when local_id == remote_id, do:
@@ -137,8 +183,18 @@ defmodule HLClock.Timestamp do
   end
 
   defimpl String.Chars do
-    def to_string(%{time: time, counter: counter, node_id: node_id}) do
-      "time: #{time}, counter: #{counter}, node_id: #{node_id}"
+    def to_string(ts) do
+      logical_time =
+        ts
+        |> T.to_datetime()
+        |> DateTime.to_iso8601
+      counter =
+        << ts.counter :: size(16) >>
+        |> Base.encode16()
+      node_id =
+        << ts.node_id :: size(64) >>
+        |> Base.encode16()
+      "#{logical_time}-#{counter}-#{node_id}"
     end
   end
 end
