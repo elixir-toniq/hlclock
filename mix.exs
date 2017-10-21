@@ -19,7 +19,10 @@ defmodule HLClock.Mixfile do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    [
+      mod: {HLClock.Application, []},
+      extra_applications: [:logger]
+    ]
   end
 
   def elixirc_paths(:test), do: ["lib", "test/support"]

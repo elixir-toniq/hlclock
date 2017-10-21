@@ -1,10 +1,11 @@
 defmodule HLClock.Server do
   use GenServer
 
-  alias HLClock.Timestamp
+  alias HLClock.{NodeId, Timestamp}
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, [name: __MODULE__])
+  def start_link(opts \\ []) do
+    opts = build_opts(opts)
+    GenServer.start_link(__MODULE__, opts, [name: opts[:name]])
   end
 
   def init(opts) do
@@ -34,4 +35,14 @@ defmodule HLClock.Server do
   defp default_counter, do: 0
 
   defp node_id([{:node_id, fun} | _]) when is_function(fun), do: fun.()
+
+  defp build_opts(opts) do
+    base_opts()
+    |> Keyword.merge(opts)
+  end
+
+  defp base_opts, do: [
+    node_id: Application.get_env(:hlclock, :node_id, fn -> NodeId.hash() end),
+    name: __MODULE__
+  ]
 end
