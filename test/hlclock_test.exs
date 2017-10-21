@@ -37,22 +37,4 @@ defmodule HLClockTest do
       assert new_clock.counter == 0
     end
   end
-
-  describe "to_datetime/1" do
-    test "returns valid DateTime objects" do
-      fixed_time = System.os_time(:milliseconds)
-      {:ok, clock} = HLClock.Timestamp.new(fixed_time, 0, 0)
-      assert :eq == clock
-      |> HLClock.to_datetime
-      |> DateTime.compare(DateTime.from_unix!(fixed_time, :millisecond))
-    end
-  end
-
-  describe "to_os_time/1" do
-    test "returns time" do
-      {:ok, _hlc} = HLClock.start_link()
-      {:ok, clock} = HLClock.now()
-      assert clock.time == HLClock.to_os_time(clock)
-    end
-  end
 end

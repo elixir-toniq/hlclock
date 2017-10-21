@@ -62,6 +62,14 @@ defmodule HLClock.TimestampTest do
     end
   end
 
+  describe "to_os_time/1" do
+    property "returns time" do
+      check all hlc <- timestamp() do
+        assert hlc.time == Timestamp.to_os_time(hlc)
+      end
+    end
+  end
+
   describe "send/2" do
     test "smoke test" do
       {:ok, t0} = Timestamp.new(0, 0)
