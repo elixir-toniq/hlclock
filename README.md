@@ -1,6 +1,6 @@
 # HLClock
 
-[![Build Status](https://travis-ci.org/keathley/hlclock.svg?branch=master)](https://travis-ci.org/keathley/hlclock)
+[![Build Status](https://travis-ci.org/tonic-sys/hlclock.svg?branch=master)](https://travis-ci.org/tonic-sys/hlclock)
 
 ## Installation
 
