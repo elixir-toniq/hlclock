@@ -18,17 +18,7 @@ defmodule HLClock do
   Inspired by https://www.cse.buffalo.edu/tech-reports/2014-04.pdf
   """
 
-  alias HLClock.{NodeId, Timestamp}
-
-  @doc """
-  Starts and links the supervision tree.
-  """
-  def start_link(opts \\ []) do
-    opts
-    |> build_opts
-    |> HLClock.Supervisor.start_link
-  end
-
+  alias HLClock.Timestamp
 
   @doc """
   Generate a single HLC Timestamp for sending to other nodes or
@@ -66,13 +56,4 @@ defmodule HLClock do
   def before?(t1, t2) do
     Timestamp.before?(t1, t2)
   end
-
-  defp build_opts(opts) do
-    base_opts()
-    |> Keyword.merge(opts)
-  end
-
-  defp base_opts, do: [
-    node_id: Application.get_env(:hlclock, :node_id, fn -> NodeId.hash() end)
-  ]
 end
