@@ -1,6 +1,5 @@
 defmodule HLClockTest do
   use ExUnit.Case, async: false
-  doctest HLClock
 
   describe "send_timestamp/0" do
     test "uses system time by default" do
@@ -24,23 +23,6 @@ defmodule HLClockTest do
       assert HLClock.before?(clock, new_clock)
       refute HLClock.before?(new_clock, clock)
       assert new_clock.counter == 0
-    end
-  end
-
-  describe "to_datetime/1" do
-    test "returns valid DateTime objects" do
-      fixed_time = System.os_time(:milliseconds)
-      {:ok, clock} = HLClock.Timestamp.new(fixed_time, 0, 0)
-      assert :eq == clock
-      |> HLClock.to_datetime
-      |> DateTime.compare(DateTime.from_unix!(fixed_time, :millisecond))
-    end
-  end
-
-  describe "to_os_time/1" do
-    test "returns time" do
-      {:ok, clock} = HLClock.now()
-      assert clock.time == HLClock.to_os_time(clock)
     end
   end
 end

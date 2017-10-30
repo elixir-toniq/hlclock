@@ -3,6 +3,8 @@ defmodule HLClock.TimestampTest do
   import PropertyTest
   import HLClock.Generators
 
+  doctest HLClock.Timestamp
+
   alias HLClock.Timestamp
 
   describe "new/3" do
@@ -40,6 +42,30 @@ defmodule HLClock.TimestampTest do
         assert hlc
         |> Timestamp.encode
         |> Timestamp.decode == hlc
+      end
+    end
+
+    property "to_string/1" do
+      check all hlc <- timestamp() do
+        assert hlc
+        |> to_string
+        |> String.length == 46
+      end
+    end
+
+    property "to_string/1 and from_string/1 are symmetric" do
+      check all hlc <- timestamp() do
+        assert hlc
+        |> to_string
+        |> Timestamp.from_string == hlc
+      end
+    end
+  end
+
+  describe "to_os_time/1" do
+    property "returns time" do
+      check all hlc <- timestamp() do
+        assert hlc.time == Timestamp.to_os_time(hlc)
       end
     end
   end
