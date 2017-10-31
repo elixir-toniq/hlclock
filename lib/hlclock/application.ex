@@ -1,9 +1,12 @@
 defmodule HLClock.Application do
   use Application
 
+  alias HLClock.{Server, Gossip}
+
   def start(_type, _opts) do
     children = [
-      {HLClock.Server, []},
+      Server,
+      Gossip,
     ]
 
     opts = [strategy: :one_for_one]
