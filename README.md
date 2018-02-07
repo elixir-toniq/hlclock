@@ -1,15 +1,15 @@
 # HLClock
 
-[![Build Status](https://travis-ci.org/tonic-sys/hlclock.svg?branch=master)](https://travis-ci.org/toniqsystems/hlclock)
+[![Build Status](https://travis-ci.org/toniqsystems/hlclock.svg?branch=master)](https://travis-ci.org/toniqsystems/hlclock)
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `hlc` to your list of dependencies in `mix.exs`:
+Now [available in Hex](https://hex.pm/docs/publish), the package can be installed
+by adding `hlclock` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:hlclock, "~> 0.1.0"}]
+  [{:hlclock, "~> 0.1.3"}]
 end
 ```
 

@@ -14,7 +14,7 @@ defmodule HLClock.Mixfile do
      package: package(),
      deps: deps(),
      name: "HLClock",
-     source_url: "https://github.com/tonic-sys/hlclock",
+     source_url: "https://github.com/toniqsystems/hlclock",
    ]
   end
 
@@ -48,7 +48,7 @@ defmodule HLClock.Mixfile do
       files: ["lib", "mix.exs", "README.md"],
       maintainers: ["Chris Keathley", "Neil Menne"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/tonic-sys/hlclock"},
+      links: %{"GitHub" => "https://github.com/toniqsystems/hlclock"},
     ]
   end
 end
