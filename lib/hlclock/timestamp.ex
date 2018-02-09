@@ -14,6 +14,12 @@ defmodule HLClock.Timestamp do
 
   alias __MODULE__, as: T
 
+  @type t :: %__MODULE__{
+    time: integer(),
+    counter: integer(),
+    node_id: integer()
+  }
+
   @doc """
   Construct a timestamp from its principal components: logical time (initially
   node's physical time), logical counter (initally zero), and the node id
