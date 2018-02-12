@@ -9,6 +9,7 @@ defmodule HLClock.Server do
   end
 
   def init(opts) do
+    Process.send_after(self(), :periodic_send, interval())
     Timestamp.new(physical_time(), default_counter(), node_id(opts))
   end
 
@@ -30,11 +31,24 @@ defmodule HLClock.Server do
     end
   end
 
+  def handle_info(:periodic_send, timestamp) do
+    Process.send_after(self(), :periodic_send, interval())
+    case Timestamp.send(timestamp, physical_time()) do
+      {:ok, timestamp} ->
+        {:noreply, timestamp}
+
+      {:error, _err} ->
+        {:noreply, timestamp}
+    end
+  end
+
   defp physical_time, do: System.os_time(:milliseconds)
 
   defp default_counter, do: 0
 
   defp node_id([{:node_id, fun} | _]) when is_function(fun), do: fun.()
+
+  defp interval, do: round(HLClock.max_drift() / 2)
 
   defp build_opts(opts) do
     base_opts()
