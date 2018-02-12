@@ -6,10 +6,6 @@ defmodule HLClock do
   Provides globally-unique, monotonic timestamps. Timestamps are bounded by the
   clock synchronization constraint, max_drift.
 
-  Implementation assumes that timestamps are (at a minimum) regularly sent; a
-  clock at rest will eventually be unable to generate timestamps due to assumed
-  bounds on the logical clock relative to physical time.
-
   In order to account for physical time drift within the system, timestamps
   should regularly be exchanged between nodes. Generate a timestamp at one node
   via HLClock.send_timestamp/1; at the other node, call HLClock.recv_timestamp/2
