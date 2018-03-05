@@ -47,7 +47,7 @@ defmodule HLClock.Mixfile do
       name: :hlclock,
       files: ["lib", "mix.exs", "README.md"],
       maintainers: ["Chris Keathley", "Neil Menne"],
-      licenses: ["MIT"],
+      licenses: ["Apache 2.0"],
       links: %{"GitHub" => "https://github.com/toniqsystems/hlclock"},
     ]
   end
