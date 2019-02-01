@@ -31,33 +31,34 @@ defmodule HLClock.TimestampTest do
     property "encoded timestamps maintains ordering" do
       check all timestamps <- list_of(timestamp()) do
         assert timestamps
-        |> Enum.map(&Timestamp.encode/1)
-        |> Enum.sort()
-        |> Enum.map(&Timestamp.decode/1) == Enum.sort(timestamps, &Timestamp.before?/2)
+               |> Enum.map(&Timestamp.encode/1)
+               |> Enum.sort()
+               |> Enum.map(&Timestamp.decode/1) ==
+                 Enum.sort(timestamps, &Timestamp.before?/2)
       end
     end
 
     property "encoding and decoding are inversions" do
       check all hlc <- timestamp() do
         assert hlc
-        |> Timestamp.encode
-        |> Timestamp.decode == hlc
+               |> Timestamp.encode()
+               |> Timestamp.decode() == hlc
       end
     end
 
     property "to_string/1" do
       check all hlc <- timestamp() do
         assert hlc
-        |> to_string
-        |> String.length == 46
+               |> to_string
+               |> String.length() == 46
       end
     end
 
     property "to_string/1 and from_string/1 are symmetric" do
       check all hlc <- timestamp() do
         assert hlc
-        |> to_string
-        |> Timestamp.from_string == hlc
+               |> to_string
+               |> Timestamp.from_string() == hlc
       end
     end
   end
@@ -97,7 +98,7 @@ defmodule HLClock.TimestampTest do
     end
 
     test "send can fail due to excessive drift" do
-      {:ok, t0}     = Timestamp.new(0, 0)
+      {:ok, t0} = Timestamp.new(0, 0)
       {:error, err} = Timestamp.send(t0, HLClock.max_drift() + 1)
       assert err == :clock_drift_violation
     end
@@ -127,14 +128,15 @@ defmodule HLClock.TimestampTest do
         {8, :recv, timestamp(10, 4, 1), timestamp(10, 8, 0)},
 
         # Faulty clock should be discarded
-        {9, :recv, timestamp(HLClock.max_drift()+10+1, 888, 1), timestamp(10, 8, 0)},
+        {9, :recv, timestamp(HLClock.max_drift() + 10 + 1, 888, 1),
+         timestamp(10, 8, 0)},
 
         # Wall clocks coincide but remote logical clock wins
         {10, :recv, timestamp(10, 99, 1), timestamp(10, 100, 0)},
 
         # The physical clock has caught up and takes over
         {11, :recv, timestamp(10, 31, 1), timestamp(11, 0, 0)},
-        {11, :send, nil, timestamp(11, 1, 0)},
+        {11, :send, nil, timestamp(11, 1, 0)}
       ]
 
       events
@@ -146,6 +148,7 @@ defmodule HLClock.TimestampTest do
     case Timestamp.new(time, counter, node_id) do
       {:ok, timestamp} ->
         timestamp
+
       _ ->
         :error
     end
@@ -161,6 +164,7 @@ defmodule HLClock.TimestampTest do
     case run_event(event, current, input, wall_time) do
       {:ok, next_clock} ->
         next_clock
+
       {:error, :remote_drift_violation} ->
         current
     end
@@ -170,6 +174,7 @@ defmodule HLClock.TimestampTest do
     case event do
       :send ->
         Timestamp.send(current, wall_time)
+
       :recv ->
         Timestamp.recv(current, input, wall_time)
     end

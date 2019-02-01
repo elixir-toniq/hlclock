@@ -15,10 +15,10 @@ defmodule HLClock.Timestamp do
   alias __MODULE__, as: T
 
   @type t :: %__MODULE__{
-    time: integer(),
-    counter: integer(),
-    node_id: integer()
-  }
+          time: integer(),
+          counter: integer(),
+          node_id: integer()
+        }
 
   @doc """
   Construct a timestamp from its principal components: logical time (initially
@@ -28,10 +28,13 @@ defmodule HLClock.Timestamp do
     cond do
       byte_size(:binary.encode_unsigned(counter)) > 2 ->
         {:error, :counter_too_large}
+
       byte_size(:binary.encode_unsigned(node_id)) > 8 ->
         {:error, :node_id_too_large}
+
       byte_size(:binary.encode_unsigned(time)) > 6 ->
         {:error, :time_too_large}
+
       true ->
         {:ok, %T{time: time, counter: counter, node_id: node_id}}
     end
@@ -42,7 +45,7 @@ defmodule HLClock.Timestamp do
   local causality tracking
   """
   def send(%{time: old_time, counter: counter, node_id: node_id}, pt) do
-    new_time    = max(old_time, pt)
+    new_time = max(old_time, pt)
     new_counter = advance_counter(old_time, counter, new_time)
 
     with :ok <- handle_drift(old_time, new_time) do
@@ -59,7 +62,8 @@ defmodule HLClock.Timestamp do
     new_time = Enum.max([physical_time, local.time, remote.time])
 
     with {:ok, node_id} <- compare_node_ids(local.node_id, remote.node_id),
-         :ok <- handle_drift(remote.time, physical_time, :remote_drift_violation),
+         :ok <-
+           handle_drift(remote.time, physical_time, :remote_drift_violation),
          :ok <- handle_drift(new_time, physical_time),
          new_counter <- merge_logical(new_time, local, remote) do
       new(new_time, new_counter, node_id)
@@ -126,13 +130,13 @@ defmodule HLClock.Timestamp do
   64 bits - Node ID
   """
   def encode(%{time: t, counter: c, node_id: n}) do
-    << t :: size(48) >> <> << c :: size(16) >> <> << n :: size(64) >>
+    <<t::size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>
   end
 
   @doc """
   Construct a Timestamp from the binary representation
   """
-  def decode(<<t :: size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
+  def decode(<<t::size(48)>> <> <<c::size(16)>> <> <<n::size(64)>>) do
     %T{time: t, counter: c, node_id: n}
   end
 
@@ -149,18 +153,22 @@ defmodule HLClock.Timestamp do
     end
   end
 
-  defp compare_node_ids(local_id, remote_id) when local_id == remote_id, do:
-    {:error, :duplicate_node_id}
+  defp compare_node_ids(local_id, remote_id) when local_id == remote_id,
+    do: {:error, :duplicate_node_id}
+
   defp compare_node_ids(local_id, _), do: {:ok, local_id}
 
   defp merge_logical(max_pt, local, remote) do
     cond do
       max_pt == local.time && max_pt == remote.time ->
         max(local.counter, remote.counter) + 1
+
       max_pt == local.time ->
         local.counter + 1
+
       max_pt == remote.time ->
         remote.counter + 1
+
       true ->
         0
     end
@@ -170,6 +178,7 @@ defmodule HLClock.Timestamp do
     cond do
       drift?(l, pt) ->
         {:error, err}
+
       true ->
         :ok
     end
@@ -183,6 +192,7 @@ defmodule HLClock.Timestamp do
     cond do
       old_time == new_time ->
         counter + 1
+
       true ->
         0
     end
@@ -193,13 +203,16 @@ defmodule HLClock.Timestamp do
       logical_time =
         ts
         |> T.to_datetime()
-        |> DateTime.to_iso8601
+        |> DateTime.to_iso8601()
+
       counter =
-        << ts.counter :: size(16) >>
+        <<ts.counter::size(16)>>
         |> Base.encode16()
+
       node_id =
-        << ts.node_id :: size(64) >>
+        <<ts.node_id::size(64)>>
         |> Base.encode16()
+
       "#{logical_time}-#{counter}-#{node_id}"
     end
   end

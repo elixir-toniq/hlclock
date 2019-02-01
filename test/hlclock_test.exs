@@ -16,7 +16,8 @@ defmodule HLClockTest do
   describe "recv_timestamp/1" do
     test "works" do
       {:ok, clock} = HLClock.send_timestamp()
-      clock = %{clock | node_id: 12345} # pretend to be from another node
+      # pretend to be from another node
+      clock = %{clock | node_id: 12345}
       :timer.sleep(100)
       {:ok, new_clock} = HLClock.recv_timestamp(clock)
 
