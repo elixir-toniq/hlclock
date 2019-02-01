@@ -93,21 +93,22 @@ defmodule HLClock.Timestamp do
   Create a millisecond granularity DateTime struct representing the logical time
   portion of the Timestamp.
 
-  Given that this representation loses the logical counter and node information,
+  Given that this representation looses the logical counter and node information,
   it should be used as a reference only. Including the counter in the DateTime
   struct would create absurd but still ordered timestamps.
 
   ## Example
 
-  iex> {:ok, _t0} = HLClock.Timestamp.new(1410652800000, 0, 0)
-  {:ok, %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}}
+      iex> {:ok, t0} = HLClock.Timestamp.new(1410652800000, 0, 0)
+      {:ok, %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}}
 
-  ...> encoded = HLClock.Timestamp.encode(t0)
-  <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
-  ...> << time_and_counter :: size(64), _ :: size(64) >> = encoded
+      iex> encoded = HLClock.Timestamp.encode(t0)
+      <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
 
-  ...> DateTime.from_unix(time_and_counter, :microsecond)
-  {:ok, #DateTime<4899-07-30 06:31:40.800000Z>}
+      iex> << time_and_counter :: size(64), _ :: size(64) >> = encoded
+
+      iex> DateTime.from_unix(time_and_counter, :microsecond)
+      {:ok, #DateTime<4899-07-30 06:31:40.800000Z>}
   """
   def to_datetime(%T{time: t}) do
     with {:ok, dt} <- DateTime.from_unix(t, :millisecond) do

@@ -3,7 +3,7 @@ defmodule HLClock do
   Hybrid Logical Clock
 
   Provides globally-unique, monotonic timestamps. Timestamps are bounded by the
-  clock synchronization constraint, max_drift.
+  clock synchronization constraint, `max_drift`.
 
   In order to account for physical time drift within the system, timestamps
   should regularly be exchanged between nodes. Generate a timestamp at one node
@@ -33,7 +33,7 @@ defmodule HLClock do
   end
 
   @doc """
-  Functionally equivalent to using send_timestamp. This generates a timestamp
+  Functionally equivalent to using `send_timestamp/0`. This generates a timestamp
   for local causality tracking.
   """
   def now do
