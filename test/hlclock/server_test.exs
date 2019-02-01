@@ -4,7 +4,10 @@ defmodule HLClock.ServerTest do
   describe "node names" do
     test "HLClocks can be given a node id" do
       node_id = fn -> 12345 end
-      {:ok, hlc} = HLClock.Server.start_link(node_id: node_id, name: :given_node_id)
+
+      {:ok, hlc} =
+        HLClock.Server.start_link(node_id: node_id, name: :given_node_id)
+
       {:ok, clock} = GenServer.call(hlc, :send_timestamp)
       assert %{node_id: 12345} = clock
     end

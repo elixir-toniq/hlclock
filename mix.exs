@@ -4,18 +4,19 @@ defmodule HLClock.Mixfile do
   @version "0.1.6"
 
   def project do
-    [app: :hlclock,
-     version: @version,
-     elixir: "~> 1.5",
-     elixirc_paths: elixirc_paths(Mix.env),
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
-     description: description(),
-     package: package(),
-     deps: deps(),
-     name: "HLClock",
-     source_url: "https://github.com/toniqsystems/hlclock",
-   ]
+    [
+      app: :hlclock,
+      version: @version,
+      elixir: "~> 1.5",
+      elixirc_paths: elixirc_paths(Mix.env()),
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
+      description: description(),
+      package: package(),
+      deps: deps(),
+      name: "HLClock",
+      source_url: "https://github.com/toniqsystems/hlclock"
+    ]
   end
 
   def application do
@@ -32,7 +33,7 @@ defmodule HLClock.Mixfile do
   defp deps do
     [
       {:stream_data, "~> 0.2", only: [:test, :dev]},
-      {:ex_doc, "~> 0.16", only: :dev},
+      {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
 
@@ -48,7 +49,7 @@ defmodule HLClock.Mixfile do
       files: ["lib", "mix.exs", "README.md"],
       maintainers: ["Chris Keathley", "Neil Menne"],
       licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/toniqsystems/hlclock"},
+      links: %{"GitHub" => "https://github.com/toniqsystems/hlclock"}
     ]
   end
 end

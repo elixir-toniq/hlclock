@@ -3,7 +3,7 @@ defmodule HLClock.Application do
 
   def start(_type, _opts) do
     children = [
-      {HLClock.Server, []},
+      {HLClock.Server, []}
     ]
 
     opts = [strategy: :one_for_one]

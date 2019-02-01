@@ -5,7 +5,7 @@ defmodule HLClock.Server do
 
   def start_link(opts \\ []) do
     opts = build_opts(opts)
-    GenServer.start_link(__MODULE__, opts, [name: opts[:name]])
+    GenServer.start_link(__MODULE__, opts, name: opts[:name])
   end
 
   def init(opts) do
@@ -17,6 +17,7 @@ defmodule HLClock.Server do
     case Timestamp.send(timestamp, physical_time()) do
       {:ok, timestamp} ->
         {:reply, {:ok, timestamp}, timestamp}
+
       {:error, error} ->
         {:reply, {:error, error}, timestamp}
     end
@@ -26,6 +27,7 @@ defmodule HLClock.Server do
     case Timestamp.recv(old_time, new_time, physical_time()) do
       {:ok, timestamp} ->
         {:reply, {:ok, timestamp}, timestamp}
+
       {:error, error} ->
         {:reply, {:error, error}, old_time}
     end
@@ -33,6 +35,7 @@ defmodule HLClock.Server do
 
   def handle_info(:periodic_send, timestamp) do
     Process.send_after(self(), :periodic_send, interval())
+
     case Timestamp.send(timestamp, physical_time()) do
       {:ok, timestamp} ->
         {:noreply, timestamp}
@@ -42,7 +45,7 @@ defmodule HLClock.Server do
     end
   end
 
-  defp physical_time, do: System.os_time(:milliseconds)
+  defp physical_time, do: System.os_time(:millisecond)
 
   defp default_counter, do: 0
 
@@ -55,8 +58,9 @@ defmodule HLClock.Server do
     |> Keyword.merge(opts)
   end
 
-  defp base_opts, do: [
-    node_id: Application.get_env(:hlclock, :node_id, fn -> NodeId.hash() end),
-    name: __MODULE__
-  ]
+  defp base_opts,
+    do: [
+      node_id: Application.get_env(:hlclock, :node_id, fn -> NodeId.hash() end),
+      name: __MODULE__
+    ]
 end
