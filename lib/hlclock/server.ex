@@ -42,7 +42,7 @@ defmodule HLClock.Server do
     end
   end
 
-  defp physical_time, do: System.os_time(:milliseconds)
+  defp physical_time, do: System.os_time(:millisecond)
 
   defp default_counter, do: 0
 
