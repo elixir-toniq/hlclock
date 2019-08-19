@@ -1,4 +1,5 @@
 defmodule HLClock.Generators do
+  use ExUnitProperties
   import StreamData
 
   alias HLClock.Timestamp
@@ -18,13 +19,20 @@ defmodule HLClock.Generators do
   end
 
   def timestamp do
-    gen all time <- integer(0..max_time_value()),
-            counter <- integer(0..max_counter()),
-            node_id <- integer(0..max_node()) do
-      {:ok, timestamp} = Timestamp.new(time, counter, node_id)
-      timestamp
+    gen all(
+          time <- gen_time(),
+          counter <- gen_counter(),
+          node_id <- gen_node_id()
+        ) do
+      Timestamp.new(time, counter, node_id)
     end
   end
+
+  def gen_time, do: integer(0..max_time_value())
+
+  def gen_counter, do: integer(0..max_counter())
+
+  def gen_node_id, do: integer(0..max_node())
 
   def large_time, do: large_integer(max_time_size())
   def large_node_id, do: large_integer(max_node())

@@ -25,31 +25,28 @@ defmodule HLClock.Timestamp do
   node's physical time), logical counter (initally zero), and the node id
   """
   def new(time, counter, node_id \\ 0) do
-    cond do
-      byte_size(:binary.encode_unsigned(counter)) > 2 ->
-        {:error, :counter_too_large}
+    assert_byte_size(node_id, 8)
+    assert_byte_size(counter, 2)
+    assert_byte_size(time, 6)
 
-      byte_size(:binary.encode_unsigned(node_id)) > 8 ->
-        {:error, :node_id_too_large}
+    %T{time: time, counter: counter, node_id: node_id}
+  end
 
-      byte_size(:binary.encode_unsigned(time)) > 6 ->
-        {:error, :time_too_large}
-
-      true ->
-        {:ok, %T{time: time, counter: counter, node_id: node_id}}
-    end
+  defp assert_byte_size(value, size) do
+    byte_size(:binary.encode_unsigned(value)) <= size ||
+      raise ArgumentError, "#{value} exceeds max byte size of #{size}"
   end
 
   @doc """
   Generate a single HLC Timestamp for sending to other nodes or
   local causality tracking
   """
-  def send(%{time: old_time, counter: counter, node_id: node_id}, pt) do
+  def send(%{time: old_time, counter: counter, node_id: node_id}, pt, max_drift) do
     new_time = max(old_time, pt)
     new_counter = advance_counter(old_time, counter, new_time)
 
-    with :ok <- handle_drift(old_time, new_time) do
-      new(new_time, new_counter, node_id)
+    with :ok <- handle_drift(old_time, new_time, max_drift) do
+      {:ok, new(new_time, new_counter, node_id)}
     end
   end
 
@@ -58,15 +55,20 @@ defmodule HLClock.Timestamp do
   perform the merge of both logical time and logical counters. Returns the new
   current timestamp for the local node
   """
-  def recv(local, remote, physical_time) do
+  def recv(local, remote, physical_time, max_drift) do
     new_time = Enum.max([physical_time, local.time, remote.time])
 
     with {:ok, node_id} <- compare_node_ids(local.node_id, remote.node_id),
          :ok <-
-           handle_drift(remote.time, physical_time, :remote_drift_violation),
-         :ok <- handle_drift(new_time, physical_time),
+           handle_drift(
+             remote.time,
+             physical_time,
+             max_drift,
+             :remote_drift_violation
+           ),
+         :ok <- handle_drift(new_time, physical_time, max_drift),
          new_counter <- merge_logical(new_time, local, remote) do
-      new(new_time, new_counter, node_id)
+      {:ok, new(new_time, new_counter, node_id)}
     end
   end
 
@@ -99,11 +101,8 @@ defmodule HLClock.Timestamp do
 
   ## Example
 
-      iex> {:ok, _t0} = HLClock.Timestamp.new(1410652800000, 0, 0)
-      {:ok, %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}}
-
-      ...> encoded = HLClock.Timestamp.encode(t0)
-      <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
+      iex> _t0 = HLClock.Timestamp.new(1410652800000, 0, 0)
+      %HLClock.Timestamp{counter: 0, node_id: 0, time: 1410652800000}
 
       ...> << time_and_counter :: size(64), _ :: size(64) >> = encoded
       <<1, 72, 113, 117, 132, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>
@@ -176,9 +175,9 @@ defmodule HLClock.Timestamp do
     end
   end
 
-  defp handle_drift(l, pt, err \\ :clock_drift_violation) do
+  defp handle_drift(l, pt, max_drift, err \\ :clock_drift_violation) do
     cond do
-      drift?(l, pt) ->
+      drift?(l, pt, max_drift) ->
         {:error, err}
 
       true ->
@@ -186,8 +185,8 @@ defmodule HLClock.Timestamp do
     end
   end
 
-  defp drift?(l, pt) do
-    abs(l - pt) > HLClock.max_drift()
+  defp drift?(l, pt, max_drift) do
+    abs(l - pt) > max_drift
   end
 
   defp advance_counter(old_time, counter, new_time) do

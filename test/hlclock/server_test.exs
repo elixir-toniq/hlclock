@@ -12,14 +12,6 @@ defmodule HLClock.ServerTest do
       assert %{node_id: 12345} = clock
     end
 
-    test "can be added in a config" do
-      Application.put_env(:hlclock, :node_id, fn -> 1337 end)
-      {:ok, hlc} = HLClock.Server.start_link(name: :config_node_id)
-      {:ok, clock} = GenServer.call(hlc, :send_timestamp)
-      Application.delete_env(:hlclock, :node_id)
-      assert %{node_id: 1337} = clock
-    end
-
     test "if no node id is given then we use a hash of the node name" do
       {:ok, hlc} = HLClock.Server.start_link(name: :no_node_id)
       {:ok, clock} = GenServer.call(hlc, :send_timestamp)
