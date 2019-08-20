@@ -20,7 +20,25 @@ by adding `hlclock` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:hlclock, "~> 0.1.3"}]
+  [{:hlclock, "~> 1.0"}]
 end
 ```
 
+## Usage
+
+In order to generate HLCs you'll need an HLClock process:
+
+```elixir
+{:ok, clock} = HLClock.start_link()
+{:ok, ts} = HLClock.send_timestamp(clock)
+```
+
+You can also supervise clock processes:
+
+```elixir
+children = [
+  {HLClock, name: :my_hlc_server},
+]
+```
+
+`HLClock.start_link/1` accepts all arguments for `GenServer`.
