@@ -1,35 +1,43 @@
 defmodule HLClock.TimestampTest do
   use ExUnit.Case
-  import PropertyTest
+  use ExUnitProperties
   import HLClock.Generators
 
   doctest HLClock.Timestamp
 
   alias HLClock.Timestamp
 
+  @max_drift 5
+
   describe "new/3" do
     property "time must be smaller then the max byte size" do
-      check all time <- large_time() do
-        assert {:error, :time_too_large} = Timestamp.new(time, 0, 0)
+      check all(time <- large_time()) do
+        assert_raise ArgumentError, fn ->
+          Timestamp.new(time, 0, 0)
+        end
       end
     end
 
     property "counter must be smaller then the max byte size" do
-      check all counter <- large_counter() do
-        assert {:error, :counter_too_large} = Timestamp.new(0, counter, 0)
+      check all(counter <- large_counter()) do
+        assert_raise ArgumentError, fn ->
+          Timestamp.new(0, counter, 0)
+        end
       end
     end
 
     property "node must be smaller then the max byte size" do
-      check all node <- large_node_id() do
-        assert {:error, :node_id_too_large} = Timestamp.new(0, 0, node)
+      check all(node <- large_node_id()) do
+        assert_raise ArgumentError, fn ->
+          Timestamp.new(0, 0, node)
+        end
       end
     end
   end
 
   describe "encoding and decoding" do
     property "encoded timestamps maintains ordering" do
-      check all timestamps <- list_of(timestamp()) do
+      check all(timestamps <- list_of(timestamp())) do
         assert timestamps
                |> Enum.map(&Timestamp.encode/1)
                |> Enum.sort()
@@ -39,7 +47,7 @@ defmodule HLClock.TimestampTest do
     end
 
     property "encoding and decoding are inversions" do
-      check all hlc <- timestamp() do
+      check all(hlc <- timestamp()) do
         assert hlc
                |> Timestamp.encode()
                |> Timestamp.decode() == hlc
@@ -47,7 +55,7 @@ defmodule HLClock.TimestampTest do
     end
 
     property "to_string/1" do
-      check all hlc <- timestamp() do
+      check all(hlc <- timestamp()) do
         assert hlc
                |> to_string
                |> String.length() == 46
@@ -55,7 +63,7 @@ defmodule HLClock.TimestampTest do
     end
 
     property "to_string/1 and from_string/1 are symmetric" do
-      check all hlc <- timestamp() do
+      check all(hlc <- timestamp()) do
         assert hlc
                |> to_string
                |> Timestamp.from_string() == hlc
@@ -65,7 +73,7 @@ defmodule HLClock.TimestampTest do
 
   describe "to_os_time/1" do
     property "returns time" do
-      check all hlc <- timestamp() do
+      check all(hlc <- timestamp()) do
         assert hlc.time == Timestamp.to_os_time(hlc)
       end
     end
@@ -73,17 +81,17 @@ defmodule HLClock.TimestampTest do
 
   describe "send/2" do
     test "smoke test" do
-      {:ok, t0} = Timestamp.new(0, 0)
-      {:ok, t1} = Timestamp.new(1, 0)
+      t0 = Timestamp.new(0, 0)
+      t1 = Timestamp.new(1, 0)
       assert Timestamp.before?(t0, t1)
       refute Timestamp.before?(t1, t0)
       assert t0.counter == 0
     end
 
     property "for a fixed physical time, logical counter incremented" do
-      check all time <- ntp_millis() do
-        {:ok, t0} = Timestamp.new(time, 0)
-        {:ok, t1} = Timestamp.send(t0, 0)
+      check all(time <- ntp_millis()) do
+        t0 = Timestamp.new(time, 0)
+        {:ok, t1} = Timestamp.send(t0, 0, @max_drift)
         assert t0.counter == 0
         assert t1.counter == 1
         refute Timestamp.before?(t1, t0)
@@ -91,24 +99,24 @@ defmodule HLClock.TimestampTest do
     end
 
     test "physical time can move backwards" do
-      {:ok, t0} = Timestamp.new(10, 0, 0)
-      {:ok, t1} = Timestamp.send(t0, 9)
+      t0 = Timestamp.new(10, 0, 0)
+      {:ok, t1} = Timestamp.send(t0, 9, @max_drift)
       assert t0.time == t1.time
       assert t1.counter == 1
     end
 
     test "send can fail due to excessive drift" do
-      {:ok, t0} = Timestamp.new(0, 0)
-      {:error, err} = Timestamp.send(t0, HLClock.max_drift() + 1)
+      t0 = Timestamp.new(0, 0, 0)
+      {:error, err} = Timestamp.send(t0, 5 + 1, @max_drift)
       assert err == :clock_drift_violation
     end
   end
 
   describe "recv_timestamp/2" do
     test "smoke test" do
-      {:ok, t0} = Timestamp.new(0, 0, 0)
-      {:ok, t1} = Timestamp.new(0, 0, 1)
-      {:ok, t2} = Timestamp.recv(t0, t1, 0)
+      t0 = Timestamp.new(0, 0, 0)
+      t1 = Timestamp.new(0, 0, 1)
+      {:ok, t2} = Timestamp.recv(t0, t1, 0, @max_drift)
       assert t2.time == 0
       assert t2.counter == 1
       assert t2.node_id == 0
@@ -128,8 +136,7 @@ defmodule HLClock.TimestampTest do
         {8, :recv, timestamp(10, 4, 1), timestamp(10, 8, 0)},
 
         # Faulty clock should be discarded
-        {9, :recv, timestamp(HLClock.max_drift() + 10 + 1, 888, 1),
-         timestamp(10, 8, 0)},
+        {9, :recv, timestamp(@max_drift + 10 + 1, 888, 1), timestamp(10, 8, 0)},
 
         # Wall clocks coincide but remote logical clock wins
         {10, :recv, timestamp(10, 99, 1), timestamp(10, 100, 0)},
@@ -145,13 +152,7 @@ defmodule HLClock.TimestampTest do
   end
 
   def timestamp(time, counter, node_id) do
-    case Timestamp.new(time, counter, node_id) do
-      {:ok, timestamp} ->
-        timestamp
-
-      _ ->
-        :error
-    end
+    Timestamp.new(time, counter, node_id)
   end
 
   def check_state({wall_time, event, input, expected}, current) do
@@ -173,10 +174,10 @@ defmodule HLClock.TimestampTest do
   def run_event(event, current, input, wall_time) do
     case event do
       :send ->
-        Timestamp.send(current, wall_time)
+        Timestamp.send(current, wall_time, @max_drift)
 
       :recv ->
-        Timestamp.recv(current, input, wall_time)
+        Timestamp.recv(current, input, wall_time, @max_drift)
     end
   end
 end

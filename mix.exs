@@ -21,7 +21,6 @@ defmodule HLClock.Mixfile do
 
   def application do
     [
-      mod: {HLClock.Application, []},
       extra_applications: [:logger]
     ]
   end
