@@ -15,6 +15,19 @@ defmodule HLClock do
   """
   alias HLClock.Timestamp
 
+  @doc """
+  Returns a specification to start an `HLClock.Server` under a supervisor
+
+  In addition to standard `GenServer` opts, this allows for two other
+  options to be passed to the underlying server:
+
+  * `:node_id` - a zero arity function returning a 64 bit integer for the node ID
+    or a constant value that was precomputed prior to starting; defaults to
+    `HLClock.NodeId.hash/0`
+  * `:max_drift` - the clock synchronization bound which is applied in either
+    direction (i.e. timestamps are too far in the past or too far in the
+    future); this value is in milliseconds and defaults to `300_000`
+  """
   def child_spec(opts) do
     %{
       id: __MODULE__,
@@ -45,7 +58,7 @@ defmodule HLClock do
   end
 
   @doc """
-  Functionally equivalent to using `send_timestamp/0`. This generates a timestamp
+  Functionally equivalent to using `send_timestamp/1`. This generates a timestamp
   for local causality tracking.
   """
   def now(server) do
