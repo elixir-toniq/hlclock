@@ -31,8 +31,8 @@ defmodule HLClock.Mixfile do
 
   defp deps do
     [
-      {:stream_data, "~> 0.2", only: [:test, :dev]},
-      {:ex_doc, "~> 0.19", only: :dev}
+      {:stream_data, "~> 1.0", only: [:test, :dev]},
+      {:ex_doc, "~> 0.40", only: :dev}
     ]
   end
 
