@@ -15,7 +15,7 @@ defmodule HLClock.Mixfile do
       package: package(),
       deps: deps(),
       name: "HLClock",
-      source_url: "https://github.com/toniqsystems/hlclock"
+      source_url: "https://github.com/elixir-toniq/hlclock"
     ]
   end
 
@@ -38,7 +38,7 @@ defmodule HLClock.Mixfile do
 
   defp description do
     """
-    Hybrid Logical Clocks.
+    Hybrid (Unique) Logical Clocks.
     """
   end
 
@@ -47,8 +47,8 @@ defmodule HLClock.Mixfile do
       name: :hlclock,
       files: ["lib", "mix.exs", "README.md"],
       maintainers: ["Chris Keathley", "Neil Menne"],
-      licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/toniqsystems/hlclock"}
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => "https://github.com/elixir-toniq/hlclock"}
     ]
   end
 end
