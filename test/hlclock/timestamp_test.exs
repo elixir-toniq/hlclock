@@ -91,7 +91,7 @@ defmodule HLClock.TimestampTest do
     property "for a fixed physical time, logical counter incremented" do
       check all(time <- ntp_millis()) do
         t0 = Timestamp.new(time, 0)
-        {:ok, t1} = Timestamp.send(t0, 0, @max_drift)
+        {:ok, t1} = Timestamp.send(t0, 0)
         assert t0.counter == 0
         assert t1.counter == 1
         refute Timestamp.before?(t1, t0)
@@ -100,15 +100,14 @@ defmodule HLClock.TimestampTest do
 
     test "physical time can move backwards" do
       t0 = Timestamp.new(10, 0, 0)
-      {:ok, t1} = Timestamp.send(t0, 9, @max_drift)
+      {:ok, t1} = Timestamp.send(t0, 9)
       assert t0.time == t1.time
       assert t1.counter == 1
     end
 
-    test "send can fail due to excessive drift" do
-      t0 = Timestamp.new(0, 0, 0)
-      {:error, err} = Timestamp.send(t0, 5 + 1, @max_drift)
-      assert err == :clock_drift_violation
+    test "max counter exception" do
+      t0 = Timestamp.new(10, 0xFFFF, 0)
+      assert {:error, :max_counter_violation} == Timestamp.send(t0, 9)
     end
   end
 
@@ -120,6 +119,15 @@ defmodule HLClock.TimestampTest do
       assert t2.time == 0
       assert t2.counter == 1
       assert t2.node_id == 0
+    end
+
+    test "max counter exception" do
+      t0 = Timestamp.new(10, 0xFFFF, 0)
+      remote = Timestamp.new(9, 0xFFFF, 1)
+      pt = 9
+
+      assert {:error, :max_counter_violation} ==
+               Timestamp.recv(t0, remote, pt, @max_drift)
     end
 
     test "events test" do
