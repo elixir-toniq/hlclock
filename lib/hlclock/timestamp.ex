@@ -46,7 +46,11 @@ defmodule HLClock.Timestamp do
   def send(%{time: old_time, counter: counter, node_id: node_id}, pt) do
     new_time = max(old_time, pt)
     new_counter = advance_counter(old_time, counter, new_time)
-    {:ok, new(new_time, new_counter, node_id)}
+
+    case handle_counter(new_counter) do
+      :ok -> {:ok, new(new_time, new_counter, node_id)}
+      err -> err
+    end
   end
 
   # Compatibility for older users of Timestamp that may be providing the max_drift.
@@ -67,15 +71,9 @@ defmodule HLClock.Timestamp do
     new_time = Enum.max([physical_time, local.time, remote.time])
 
     with {:ok, node_id} <- compare_node_ids(local.node_id, remote.node_id),
-         :ok <-
-           handle_drift(
-             remote.time,
-             physical_time,
-             max_drift,
-             :remote_drift_violation
-           ),
-         :ok <- handle_drift(new_time, physical_time, max_drift),
-         new_counter <- merge_logical(new_time, local, remote) do
+         :ok <- handle_drift(remote.time, physical_time, max_drift),
+         new_counter <- merge_logical(new_time, local, remote),
+         :ok <- handle_counter(new_counter) do
       {:ok, new(new_time, new_counter, node_id)}
     end
   end
@@ -183,10 +181,10 @@ defmodule HLClock.Timestamp do
     end
   end
 
-  defp handle_drift(l, pt, max_drift, err \\ :clock_drift_violation) do
+  defp handle_drift(l, pt, max_drift) do
     cond do
       drift?(l, pt, max_drift) ->
-        {:error, err}
+        {:error, :remote_drift_violation}
 
       true ->
         :ok
@@ -204,6 +202,14 @@ defmodule HLClock.Timestamp do
 
       true ->
         0
+    end
+  end
+
+  defp handle_counter(counter) do
+    if counter > 0xFFFF do
+      {:error, :max_counter_violation}
+    else
+      :ok
     end
   end
 
