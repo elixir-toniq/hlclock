@@ -34,13 +34,8 @@ defmodule HLClock.Server do
   end
 
   def handle_call(:send_timestamp, _from, data) do
-    case Timestamp.send(data.timestamp, physical_time(), data.max_drift) do
-      {:ok, timestamp} ->
-        {:reply, {:ok, timestamp}, %{data | timestamp: timestamp}}
-
-      {:error, error} ->
-        {:reply, {:error, error}, data}
-    end
+    {:ok, timestamp} = Timestamp.send(data.timestamp, physical_time())
+    {:reply, {:ok, timestamp}, %{data | timestamp: timestamp}}
   end
 
   def handle_call(
@@ -60,13 +55,8 @@ defmodule HLClock.Server do
   def handle_info(:periodic_send, data) do
     Process.send_after(self(), :periodic_send, interval(data))
 
-    case Timestamp.send(data.timestamp, physical_time(), data.max_drift) do
-      {:ok, ts} ->
-        {:noreply, %{data | timestamp: ts}}
-
-      {:error, _} ->
-        {:noreply, data}
-    end
+    {:ok, ts} = Timestamp.send(data.timestamp, physical_time(), data.max_drift)
+    {:noreply, %{data | timestamp: ts}}
   end
 
   defp physical_time, do: System.os_time(:millisecond)

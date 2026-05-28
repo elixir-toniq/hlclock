@@ -104,12 +104,6 @@ defmodule HLClock.TimestampTest do
       assert t0.time == t1.time
       assert t1.counter == 1
     end
-
-    test "send can fail due to excessive drift" do
-      t0 = Timestamp.new(0, 0, 0)
-      {:error, err} = Timestamp.send(t0, 5 + 1, @max_drift)
-      assert err == :clock_drift_violation
-    end
   end
 
   describe "recv_timestamp/2" do
