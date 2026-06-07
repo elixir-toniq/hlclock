@@ -151,13 +151,43 @@ defmodule HLClock.Timestamp do
   Recover a Timestamp from the string representation.
   """
   def from_string(tstr) do
-    with {:ok, dt, _} <- tstr |> String.slice(0, 24) |> DateTime.from_iso8601(),
-         time when is_integer(time) <- DateTime.to_unix(dt, :millisecond),
-         {counter, _} <- tstr |> String.slice(25, 4) |> Integer.parse(16),
-         {node, _} <- tstr |> String.slice(30, 16) |> Integer.parse(16),
-         {:ok, timestamp} <- new(time, counter, node) do
-      timestamp
-    end
+    time =
+      tstr
+      |> String.slice(0, 24)
+      |> DateTime.from_iso8601()
+      |> case do
+        {:ok, dt, _} ->
+          DateTime.to_unix(dt, :millisecond)
+
+        _ ->
+          raise ArgumentError, "invalid timestamp string #{tstr}"
+      end
+
+    counter =
+      tstr
+      |> String.slice(25, 4)
+      |> Integer.parse(16)
+      |> case do
+        {counter, _} ->
+          counter
+
+        :error ->
+          raise ArgumentError, "invalid timestamp string #{tstr}"
+      end
+
+    node =
+      tstr
+      |> String.slice(30, 16)
+      |> Integer.parse(16)
+      |> case do
+        {node, _} ->
+          node
+
+        :error ->
+          raise ArgumentError, "invalid timestamp string #{tstr}"
+      end
+
+    new(time, counter, node)
   end
 
   defp compare_node_ids(local_id, remote_id) when local_id == remote_id,

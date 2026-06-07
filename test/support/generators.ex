@@ -13,7 +13,7 @@ defmodule HLClock.Generators do
   def ntp_millis, do: integer(0..@max_time_size)
 
   def int_of_size(size) do
-    bind(bitstring(length: size), fn <<n::integer-size(size)>> ->
+    bind(bitstring(length: size), fn <<n::integer-size(^size)>> ->
       constant(n)
     end)
   end
